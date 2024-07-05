@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Reddit+Sans+Condensed:wght@200..900&display=swap');
+
+    * {
+      margin: 0px;
+      padding: 0px;
+      font-family: "Reddit Sans Condensed", sans-serif;
+      /* outline: 2px solid white; */
+    }
+
+
+    .new-message {
+      color: rgb(255, 255, 255);
+      list-style: none;
+      margin: 6px 6px;
+      background-color: rgb(2, 6, 251);
+      padding: 4px 7px 4px 7px;
+      border-top-left-radius: 10px;
+      border-bottom-right-radius: 10px;
+      border-top-right-radius: 10px;
+      font-weight: 400;
+      max-width: max-content;
+      font-size: 14px;
+    }
+
+    #layout {
+      display: grid;
+      height: 100vh;
+      grid-template-areas: "sidebar chat chat chat chat chat";
+    }
+
+    #Channels {
+      grid-area: sidebar;
+      background-color: rgb(35, 35, 35);
+    }
+
+    #Chat {
+      position: relative;
+      overflow-y: scroll;
+      grid-area: chat;
+      background-color: rgb(23, 23, 23);
+      width: 100%;
+    }
+
+    #Chat::-webkit-scrollbar {
+      display: none;
+    }
+
+    #textBox {
+      display: flex;
+      justify-content: center;
+      align-items: baseline;
+      width: 100%;
+      border-radius: 2px;
+      margin-bottom: 90px;
+    }
+
+    #chat-container {
+      scroll-behavior: smooth;
+      height: calc(100vh - 60px);
+      overflow-y: scroll;
+      background-color: rgba(0, 0, 0, 0);
+    }
+
+    #chat-container::-webkit-scrollbar {
+      background-color: rgba(255, 255, 255, 0.082);
+      width: 5px;
+    }
+
+    #chat-container::-webkit-scrollbar-thumb {
+      background-color: rgba(255, 255, 255, 0.543);
+      border-radius: 10px;
+    }
+
+
+    button {
+      padding: 0;
+      font-size: 20px;
+      height: 43.2px;
+    }
+
+    #Channels {
+      display: flex;
+      flex-direction: column;
+      background-color: rgb(35, 35, 35);
+      color: white;
+      padding: 10px;
+    }
+
+    #Channels ul {
+      list-style-type: none;
+    }
+
+    #Channels ul>li {
+      padding: 10px;
+    }
+
+    #Channels ul>li>a {
+      text-decoration: none;
+      color: white;
+      cursor: pointer;
+    }
+
+    .msg-position {
+      display: flex;
+      align-items: right;
+      background-color: rgb(47, 209, 47);
+    }
+
+    #textBox-container {
+      padding: 7px;
+    }
+
+    #message {
+      width: 70%;
+      height: 30px;
+      border-radius: 10px;
+      border: none;
+      padding: 0px 7px 0px 7px;
+      background-color: rgba(240, 248, 255, 0.247);
+      color: white;
+    }
+
+    #message:focus {
+      outline: none;
+    }
+
+    .send-svg {
+      outline: 2px solid white;
+      background-color: green;
+    }
+
+    form {
+      display: flex;
+      align-items: center;
+    }
+
+    svg {
+      background-color: rgb(2, 255, 116);
+      padding: 3px;
+      border-radius: 100%;
+      margin-left: 3px;
+      cursor: pointer;
+    }
+
+    .create-room>input {
+      padding-left: 4px;
+      border: none;
+      outline: none;
+      height: 24px;
+      border-radius: 2px;
+      background-color: teal;
+      color: white;
+    }
+
+    .create-room>input::placeholder {
+      color: rgba(255, 255, 255, 0.516);
+    }
+  </style>
+
+  <main id="layout">
+    <section id="Channels">
+      <ul>
+        <form class="create-room" onsubmit="joinRoom()">
+          <input type="text" placeholder="join room" id="currentRoom" />
+        </form>
+        <br/>
+        <p class="currentRoom"></p>
+      </ul>
+    </section>
+    <section id="Chat">
+      <ul id="chat-container">
+        <li class="new-message">Message1</li>
+      </ul>
+      <div id="textBox-container">
+        <form onsubmit="sendMessage(this)">
+          <input type="text" id="message">
+          <?xml version="1.0" ?><svg role="button" onclick="sendMessage()" height="24" viewBox="0 0 48 48" width="24"
+            xmlns="http://www.w3.org/2000/svg">
+            <path d="M4.02 42l41.98-18-41.98-18-.02 14 30 4-30 4z" />
+            <path d="M0 0h48v48h-48z" fill="none" />
+          </svg>
+        </form>
+        
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.1/socket.io.js"></script>
+  <script>
+
+    var socket = io();
+    const chatBox = document.getElementById('chat-container');
+
+    const currentRoomID = null;
+
+    function joinRoom() {
+      event.preventDefault();
+      let roomID = document.getElementById('currentRoom').value;
+      chatBox.innerHTML = "";
+      currentRoomID = roomID;
+      socket.emit('joinRoom', roomID);
+    }
+
+
+    socket.on('old messages', function (oldmsg) {
+      oldmsg.forEach(obj => {
+        insertMessage(obj.msg);
+      });
+    })
+
+
+    function sendMessage() {
+      event.preventDefault();
+      let message = document.getElementById("message").value;
+
+      message = (message.trim()).toString();
+      if (message == "") return;
+
+      socket.emit('message', {message, currentRoomID});
+      document.getElementById("message").value = "";
+    }
+ 
+    function insertMessage(msg) {
+      chatBox.insertAdjacentHTML('beforeend', `<li class="new-message">${msg}</li>`);
+      scrollToBottom()
+    }
+
+
+    socket.on('message', function (msg) {
+      insertMessage(msg);
+    });
+
+    socket.on('old-messages', function (arrOfOld) {
+      console.log(arrOfOld)
+      arrOfOld.map(({ msg }) => {
+        insertMessage(msg);
+      })
+    })
+
+    function scrollToBottom() {
+      let chatContainer = document.getElementById('chat-container');
+      chatContainer.lastElementChild.scrollIntoView()
+    }
+
+    function getRooms() {
+      socket.emit('getCurrentRooms', (rooms) => {
+        alert(`You are in rooms: ${rooms.join(', ')}`);
+      });
+    }
+
+  </script>
+
+
+</body>
+
+</html>

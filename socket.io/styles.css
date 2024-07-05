@@ -1,0 +1,128 @@
+* {
+    margin: 0px;
+    padding: 0px;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif
+      /* outline: 2px solid black; */
+  }
+
+
+  .new-message {
+    color: white;
+    list-style: none;
+    margin: 10px 10px;
+    background-color: rgb(27, 59, 220, 0.7);
+    padding: 6px;
+    border-radius: 3px;
+    max-width: max-content;
+  }
+
+  #layout {
+    display: grid;
+    height: 100vh;
+    grid-template-areas: "sidebar chat chat chat chat chat";
+  }
+
+  #Channels {
+    grid-area: sidebar;
+    background-color: rgb(35, 35, 35);
+  }
+
+  #Chat {
+    position: relative;
+    overflow-y: scroll;
+    grid-area: chat;
+    background-color: rgb(23, 23, 23);
+    width: 100%;
+  }
+
+  #Chat::-webkit-scrollbar {
+    display: none;
+  }
+
+  #textBox-container {
+    position: fixed;
+    bottom: 0px;
+    height: max-content;
+    width: 100%;
+    display: flex;
+    justify-content:flex-start;
+  }
+
+  #textBox {
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    width: 100%;
+    border-radius: 2px;
+    margin-bottom: 90px;
+  }
+
+
+  #message:hover {
+    outline-offset: 0px;
+    outline-width: 0px;
+    outline-color: blue;
+  }
+
+  #message:focus {
+    border-width: 0px;
+    outline-width: 1px;
+    outline-offset: 0px;
+    border-color: lightgreen;
+    outline-color: rgb(64, 222, 64);
+  }
+
+  #message {
+    font-size: 20px;
+    padding: 10px;
+    margin: 10px;
+    border: 0px solid transparent;
+    border-radius: 4px;
+    background-color: rgb(35, 35, 35);
+    color: white;
+  }
+
+  #chat-container {
+    height: 100vh;
+    overflow-y: scroll;
+    margin-bottom: 70px;
+  }
+
+  #chat-container::-webkit-scrollbar {
+    background-color: rgba(255, 255, 255, 0.082);
+    width: 5px;
+  }
+
+  #chat-container::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.543);
+    border-radius: 10px;
+  }
+
+
+  button {
+    padding: 0;
+    font-size: 20px;
+    height: 43.2px;
+  }
+
+  #Channels {
+    display: flex;
+    flex-direction: column;
+    background-color: rgb(35, 35, 35);
+    color: white;
+    padding: 10px;
+  }
+
+  #Channels ul {
+    list-style-type: none;
+  }
+
+  #Channels ul>li {
+    padding: 10px;
+  }
+
+  #Channels ul>li>a {
+    text-decoration: none;
+    color: white;
+    cursor: pointer;
+  }
