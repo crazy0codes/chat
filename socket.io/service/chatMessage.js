@@ -12,7 +12,7 @@ async function sendMessage(message){
 
 async function oldMessages(){
     try {
-       const msgsList = await sql`SELECT * FROM MESSAGES`;
+       let msgsList = await sql`SELECT * FROM MESSAGES`;
        return msgsList;
     }
     catch(err) {

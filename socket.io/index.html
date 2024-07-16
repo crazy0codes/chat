@@ -35,13 +35,11 @@
     }
 
     #layout {
-      display: grid;
-      height: 100vh;
-      grid-template-areas: "sidebar chat chat chat chat chat";
+      display: flex ;
+      flex-direction: column;
     }
 
     #Channels {
-      grid-area: sidebar;
       background-color: rgb(35, 35, 35);
     }
 
@@ -176,7 +174,7 @@
           <input type="text" placeholder="join room" id="currentRoom" />
         </form>
         <br/>
-        <p class="currentRoom"></p>
+        <p class="currentRoom">Global Room</p>
       </ul>
     </section>
     <section id="Chat">
@@ -204,14 +202,6 @@
     const chatBox = document.getElementById('chat-container');
 
     const currentRoomID = null;
-
-    function joinRoom() {
-      event.preventDefault();
-      let roomID = document.getElementById('currentRoom').value;
-      chatBox.innerHTML = "";
-      currentRoomID = roomID;
-      socket.emit('joinRoom', roomID);
-    }
 
 
     socket.on('old messages', function (oldmsg) {
