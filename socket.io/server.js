@@ -1,11 +1,12 @@
 const app = require('express')();
+const cors = require('cors')
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { createServer } = require('http');
 const sql = require('./config/db.config');
-const { sendMessage, oldMessages } = require('./service/chatMessage');
-const { getUserAccessToken } = require('./service/userAccess');
 const cookieParser = require('cookie-parser');
+const { getUserAccessToken } = require('./service/userAccess');
+const { sendMessage, oldMessages } = require('./service/chatMessage');
 require('dotenv').config();
 
 
@@ -19,11 +20,16 @@ const io = require('socket.io')(http, {
 });
 
 app.use(cookieParser())
+app.use(cors({
+    origin: process.env.WEBSITE_URL,
+    methods: ["GET", "POST"],
+    credentials: true
+}));
+
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + "/index.html");
 })
-
 
 
 app.get('/login', hasToken, hasOnlyPassword)
@@ -57,51 +63,68 @@ async function hasOnlyPassword(req, res) {
 
     //Verify the  hashed passsword and user-sent password
     const [{ stu_password }] = hashedPassword;
-    console.log(stu_password)
-    console.log("hashed password ", stu_password)
+    console.log('Verfication of password')
     if (await bcrypt.compare(password, stu_password)) {
-        console.log("User's password == hashed password : true")
+        console.log("valid password")
+        console.log("generated token")
+        console.log("setting token in cookie")
         res
-            .cookie('token', getUserAccessToken(email))
             .status(200)
-            .json({ msg: "user has logged in" })
+            .json({
+                token: getUserAccessToken(email),
+                username : email,
+                validUser: true
+            })
         return;
     }
 
-
-    console.log("User's password == hashed password : false")
+    console.log("invalid password")
 
     res
         .status(403)
         .json({ msg: "invalid password" })
     return;
-
 }
 
+
+//Login function using the token 
 function hasToken(req, res, next) {
     const { email, password } = req.query
-    const { token } = req.cookies;
+    const bearerToken = req.headers.authorization;
+    let token = bearerToken.split(" ")[1];
+
+    console.log(token)
+
+    token = (token == "undefined" || token == "null" )
+            ? null : token
+
     if (!(email && password)) {
+        console.log("No password || email")
         res
             .status(402)
             .json({ msg: "required all credentials" })
         return
     }
 
-
     try {
         if (token) {
-            const decoded = jwt.verify(token, 'Ofkjasojl[][&#^&QW23[OJLJfsd');
+            console.log("User has the token")
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
             console.log('Token is valid');
             console.log(decoded);
             if (decoded.email != email) {
                 next();
             }
             res.status(200)
-                .json({ email: decoded.email })
+                .json({
+                    token,
+                    username : decoded.email,
+                    validUser: true
+                })
             return;
         }
         else {
+            console.log("User no token")
             next();
         }
 
