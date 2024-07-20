@@ -10,7 +10,7 @@ function getUserAccessToken(email) {
             { email },
             process.env.JWT_SECRET,
             {
-                expiresIn: "10d"
+                expiresIn: "7d"
             }
         )
         return token

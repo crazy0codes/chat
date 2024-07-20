@@ -6,7 +6,7 @@ const { createServer } = require('http');
 const sql = require('./config/db.config');
 const cookieParser = require('cookie-parser');
 const { getUserAccessToken } = require('./service/userAccess');
-const { sendMessage, oldMessages } = require('./service/chatMessage');
+const { sendMessage, globalMessages } = require('./service/chatMessage');
 require('dotenv').config();
 
 
@@ -72,7 +72,7 @@ async function hasOnlyPassword(req, res) {
             .status(200)
             .json({
                 token: getUserAccessToken(email),
-                username : email,
+                username: email,
                 validUser: true
             })
         return;
@@ -95,8 +95,8 @@ function hasToken(req, res, next) {
 
     console.log(token)
 
-    token = (token == "undefined" || token == "null" )
-            ? null : token
+    token = (token == "undefined" || token == "null")
+        ? null : token
 
     if (!(email && password)) {
         console.log("No password || email")
@@ -115,10 +115,11 @@ function hasToken(req, res, next) {
             if (decoded.email != email) {
                 next();
             }
+
             res.status(200)
                 .json({
                     token,
-                    username : decoded.email,
+                    username: decoded.email,
                     validUser: true
                 })
             return;
@@ -147,43 +148,75 @@ function hasToken(req, res, next) {
 }
 
 
-io.on('connection', async (user) => {
-    console.log(user.id + " is connected");
+io.use((user, next) => {
+    const { email } = user.handshake.query;
+    user.email = email;
+    console.log("email :", email)
+    next();
+});
 
-    try {
-        const oldMsgs = await oldMessages();
-        user.emit('old-messages', oldMsgs);
-    } catch (error) {
-        console.error("Error fetching old messages:", error);
-    }
+io.on('connection', async (user) => {
+    console.log(user.email + " connected to " + "🔗" + " server ", "✅");
 
     user.on('disconnect', function () {
-        console.log(user.id + " is disconnected");
+        console.log(user.email + " is disconnected ❌");
     })
 
-    user.on('joinRoom', function (roomID) {
-        user.join(roomID)
-        console.log(user.id + " has joined the " + roomID)
+    user.on('user-rooms', async function (callBack) {
+        const [roomArray] = await sql`SELECT rooms FROM user_in_rooms WHERE stu_email = ${user.email};`;
+        console.log(roomArray);
+        console.log("current rooms :", roomArray)
+        const {rooms} = roomArray;
+        user.emit("current-rooms", rooms)
+    })
+
+    async function joinRooms(roomId) {
+        const [isRoomRegisterd] = await sql`SELECT EXISTS (SELECT 1 FROM rooms WHERE roomid = ${roomId} LIMIT 1);`
+
+        console.log("Registered room :", isRoomRegisterd.exists)
+
+        if (!isRoomRegisterd.exists) {
+            await sql`INSERT INTO rooms(ROOM_ADMIN, ROOMID) VALUES(${user.email}, ${roomId});`
+        }
+        console.log("email ", user.email)
+        let [{rooms}] = await sql`SELECT rooms FROM user_in_rooms WHERE stu_email = ${user.email}`;
+        let index = rooms.indexOf(roomId);
+
+        if(index == -1){
+            rooms.push(roomId);
+            try {
+                await sql`UPDATE USER_IN_ROOMS SET rooms = ${rooms} WHERE STU_EMAIL = ${user.email}`
+            } catch (error) {
+                console.log("Error :", error);
+            }
+        }
+        user.emit("current-rooms", rooms)
+    }
+
+    user.on('join-room', async function (roomId) {
+        user.join(roomId);
+        console.log(user.email + " has joined the " + roomId);
+        try {
+            joinRooms(roomId)
+            let roomMsgs = await sql`SELECT * FROM messages_table WHERE roomid = ${roomId}`
+            user.emit('old-messages', roomMsgs);
+        } catch (error) {
+            console.log("Error join-room :", error);
+        }
     })
 
     user.on('message', ({ msgObj, roomID }) => {
-        const { msg, msg_delivered } = msgObj;
+        const { stu_email, msg, msg_delivered } = msgObj;
         try {
             if (roomID) {
-                io.to(roomID).emit('message', msg);
-                console.log(`From ${roomID} -> ${user.id} : ${msg}`);
+                console.log(roomID)
+                io.to(roomID).emit('message', msgObj);
+                console.log(`From ${roomID} -> at ${msg_delivered}  ${stu_email} : ${msg}`);
+                sendMessage({ ...msgObj, roomid: roomID });
             }
-
-            sendMessage(msg);
-            io.emit('message', {
-                msg,
-                msg_delivered
-            });
-            console.log(`${user.id} : ${msg}`);
         } catch (error) {
             console.error("Error sending message:", error);
         }
     })
 })
-
 http.listen(3001, function () { console.log("Server is running"); })
