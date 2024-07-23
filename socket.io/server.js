@@ -147,7 +147,7 @@ function hasToken(req, res, next) {
     }
 }
 
-app.get('*',(req,res) => res.render(<h1>ERROR 404</h1>))
+app.get('*',(req,res) => res.send("<h1>ERROR 404</h1>"))
 
 
 io.on('connection', async (user) => {
