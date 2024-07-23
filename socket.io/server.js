@@ -90,6 +90,7 @@ async function hasOnlyPassword(req, res) {
 //Login function using the token 
 function hasToken(req, res, next) {
     const { email, password } = req.query
+    console.log(req.query)
     const bearerToken = req.headers.authorization;
     let token = bearerToken.split(" ")[1];
 
