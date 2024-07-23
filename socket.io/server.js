@@ -148,26 +148,29 @@ function hasToken(req, res, next) {
 }
 
 
-io.use((user, next) => {
-    const { email } = user.handshake.query;
-    user.email = email;
-    console.log("email :", email)
-    next();
-});
 
 io.on('connection', async (user) => {
-    console.log(user.email + " connected to " + "🔗" + " server ", "✅");
+
+    user.on('fresh-connection', function ({ stu_email, token }) {
+        user.email = stu_email,
+            user.token = token,
+            console.log(user.email + " connected to " + "🔗" + " server ", "✅");
+    })
 
     user.on('disconnect', function () {
         console.log(user.email + " is disconnected ❌");
     })
 
     user.on('user-rooms', async function (callBack) {
-        const [roomArray] = await sql`SELECT rooms FROM user_in_rooms WHERE stu_email = ${user.email};`;
-        console.log(roomArray);
-        console.log("current rooms :", roomArray)
-        const {rooms} = roomArray;
-        user.emit("current-rooms", rooms)
+        try {
+            console.log(user.email);
+            const [{ rooms }] = await sql`SELECT rooms FROM user_in_rooms WHERE stu_email = ${user.email};`;
+            console.log("current rooms :", rooms)
+            user.emit("current-rooms", rooms)
+        }
+        catch (err) {
+            console.error(err)
+        }
     })
 
     async function joinRooms(roomId) {
@@ -179,10 +182,10 @@ io.on('connection', async (user) => {
             await sql`INSERT INTO rooms(ROOM_ADMIN, ROOMID) VALUES(${user.email}, ${roomId});`
         }
         console.log("email ", user.email)
-        let [{rooms}] = await sql`SELECT rooms FROM user_in_rooms WHERE stu_email = ${user.email}`;
+        let [{ rooms }] = await sql`SELECT rooms FROM user_in_rooms WHERE stu_email = ${user.email}`;
         let index = rooms.indexOf(roomId);
 
-        if(index == -1){
+        if (index == -1) {
             rooms.push(roomId);
             try {
                 await sql`UPDATE USER_IN_ROOMS SET rooms = ${rooms} WHERE STU_EMAIL = ${user.email}`
@@ -219,4 +222,5 @@ io.on('connection', async (user) => {
         }
     })
 })
-http.listen(3001, function () { console.log("Server is running"); })
+
+http.listen(3001, function () { console.log("Server is running on 3001"); })
