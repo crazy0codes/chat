@@ -20,11 +20,14 @@ const io = require('socket.io')(http, {
 });
 
 app.use(cookieParser())
-app.use(cors({
+
+const corsConfig = {
     origin: process.env.WEBSITE_URL,
     methods: ["GET", "POST"],
     credentials: true
-}));
+}
+
+app.use(cors());
 
 
 app.get('/', (req, res) => {
