@@ -12,12 +12,14 @@ require('dotenv').config();
 
 const http = createServer(app);
 
-const io = require('socket.io')(http, {
+const socketConfig = {
     cors: {
         origin: process.env.WEBSITE_URL,
         methods: ["GET", "POST"]
     }
-});
+}
+
+const io = require('socket.io')(http);
 
 app.use(cookieParser())
 
