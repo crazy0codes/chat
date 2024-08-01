@@ -19,7 +19,13 @@ const socketConfig = {
     }
 }
 
-const io = require('socket.io')(http);
+const io = require('socket.io')(http, {
+    cors: {
+        origin: "*", 
+        methods: ["GET", "POST"]
+    }
+});
+
 
 app.use(cookieParser())
 
