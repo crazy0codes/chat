@@ -70,7 +70,7 @@ async function hasOnlyPassword(req, res) {
     if (await bcrypt.compare(password, stu_password)) {
         console.log("valid password")
         console.log("generated token")
-        console.log("setting token in cookie")
+        console.log("logged In")
         res
             .status(200)
             .json({
@@ -93,12 +93,9 @@ async function hasOnlyPassword(req, res) {
 //Login function using the token 
 function hasToken(req, res, next) {
     const { email, password } = req.query
-    console.log(req.query)
+    console.log(`email : ${email} && password : ${password}`)
     const bearerToken = req.headers.authorization;
     let token = bearerToken.split(" ")[1];
-
-    console.log(token)
-
     token = (token == "undefined" || token == "null")
         ? null : token
 
@@ -129,7 +126,7 @@ function hasToken(req, res, next) {
             return;
         }
         else {
-            console.log("User no token")
+            console.log("User with no token")
             next();
         }
 
@@ -156,10 +153,13 @@ app.get('*',(req,res) => res.send("<h1>ERROR 404</h1>"))
 
 io.on('connection', async (user) => {
 
-    user.on('fresh-connection', function ({ stu_email, token }) {
-        user.email = stu_email,
+    user.on('fresh-connection', function ({stu_email, token}) {
+        console.log(`User connecting to socket with /\n email : ${stu_email} \n`)
+        if(stu_email){
+            user.email = stu_email,
             user.token = token,
             console.log(user.email + " connected to " + "🔗" + " server ", "✅");
+        }
     })
 
     user.on('disconnect', function () {
@@ -168,7 +168,7 @@ io.on('connection', async (user) => {
 
     user.on('user-rooms', async function (callBack) {
         try {
-            console.log(user.email);
+            console.log("email is :" , user.email);
             const [{ rooms }] = await sql`SELECT rooms FROM user_in_rooms WHERE stu_email = ${user.email};`;
             console.log("current rooms :", rooms)
             user.emit("current-rooms", rooms)
